@@ -2,8 +2,7 @@ const mongoose = require('mongoose')
 const express = require('express')
 const cors = require('cors')
 const bcryptjs = require('bcryptjs')
-
-
+const jwt = require('jsonwebtoken')
 
 const app = express()
 app.use(express.json()) 
@@ -52,16 +51,49 @@ app.post('/createUser',(req,res)=>{
         if(err === null){
           bcryptjs.hash(user_data.password,salt,(err,newPassword)=>{
             user_data.password = newPassword;
+            let user_abc = new userModel(user_data)
+            user_abc.save()
+            .then(()=>res.send({message:"user created"}))
+            .catch((error)=>res.send({message:"Error occured "+ error}))
+
           })
         }
     }  )
-    
-    let user_abc = new userModel(user_data)
-    user_abc.save()
-    .then(()=>res.send({message:"user created"}))
-    .catch((error)=>res.send({message:"Error occured "+ error}))
-    
+
 })
+
+
+app.post('/login',(req,res)=>{
+
+    let {username, password} = req.body
+    userModel.findOne({username:username})
+    .then((user)=>{
+        if(user !== null){
+            bcryptjs.compare(password,user.password,(err,status)=>{
+                if (status){
+                    jwt.sign(username,"netflix",(err,token)=>{
+                        if (err===null){
+                            res.send({message:"login successful",token:token})
+                        }else{
+                            res.send({error:err})
+                        }
+                    })
+                }else{
+                    res.send({message:"bad password, please try again"})
+                }
+            })
+        }else{
+
+        }
+    })
+    .catch((err)=>res.send({message:"User not found"}) )
+})
+
+
+
+
+
+
 
 app.put('/updateUser/:id',(req,res)=>{
     let user_id = req.params.id
@@ -78,4 +110,34 @@ app.delete('/deleteUser/:id',(req,res)=>{
     .catch((err)=>res.send({message:err}))
 })
 
+
+function tokenVerification( req,res,next ) {
+    if(req.headers.authorization){
+        let token = req.headers.authorization.split(" ")[1]
+        jwt.verify(token,"netflix",(err, userCred)=>{
+            if (err===null){
+                next()
+            }else{
+                res.send({message:"token invalid"})
+            }
+        })
+    }else{
+        res.send({message:"please authenticate your request"})
+    }
+}
+
+app.get('/test',tokenVerification,(req,res)=>{
+    res.send({message:"hello :)"})
+})
+
+
 app.listen(8000)
+
+
+
+// {
+//     "username":"lakshay345",
+//     "email":"lakshay@hsdkjfh.com",
+//     "password":"sdfgfhgjgf"
+// }
+// eyJhbGciOiJIUzI1NiJ9.bGFrc2hheTM0NQ.1W6VHubjYfYNqzRj6mFuSCQOM5uFpMR42FvkcKTX6cg
