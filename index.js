@@ -2,7 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 
-mongoose.connect("mongodb://localhost:27017/MoviesDB")
+mongoose.connect("mongodb+srv://admin:test@cluster0.ycautsx.mongodb.net/?retryWrites=true&w=majority")
     .then(() => console.log("data connect successfully"))
     .catch((err) => console.log("there was an error", err))
 
@@ -29,7 +29,7 @@ const movieSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // model  for schema
-const movieModel = new mongoose.model('Movies', movieSchema)
+const movieModel = new mongoose.model('movies', movieSchema)
 
 
 app.get('/',(req,res)=>{
@@ -42,6 +42,59 @@ app.get('/',(req,res)=>{
     .catch((err) => console.log("there was an error", err))
 
 })
+// posi api 
+app.post('/createmovie', (req,res)=>{
+    let data_from_request = req.body;
+    let new_movie = new movieModel(data_from_request)
+    new_movie.save()
+    .then(()=>{
+        res.send( {
+            message:"Movie created" + `${data_from_request}`
+        } )
+    })
+    .catch((err)=>{
+        res.send({
+            message:"there was an error",
+            error:err
+        })
+    })
+    
+})
+
+// update
+app.put('/updatemovie/:id',(req,res)=>{
+    let object_id = req.params.id;
+    let updated_data = req.body;
+    movieModel.updateOne({_id:object_id},updated_data)
+    .then(()=>{res.send({
+        message:"updated successfully"
+    })})
+    .catch((err)=>{
+        res.send({
+            message:"there was an error",
+            error: err
+        })
+    })
+})
+
+// delete
+app.delete('/deletemovie/:id',(req,res)=>{
+    let object_id = req.params.id;
+    movieModel.deleteOne({_id:object_id})
+    .then(()=>{
+        res.send({
+            message:"deleted successfully"
+        })
+
+    })
+    .catch((err)=>{
+        res.send({
+            message: "there was error "+ err
+        })
+    })
+})
+
+
 
 
 app.listen(8000)
